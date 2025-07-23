@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Interactive Guide to Defensive Stocks</title>
+    <!-- Chosen Palette: Warm Neutrals with Slate Blue -->
+    <!-- Application Structure Plan: A single-page application with a top navigation bar for smooth scrolling between thematic sections. The flow is designed to be educational, starting with a high-level definition, moving to performance characteristics, then a detailed comparison with other stock types, exploring key sectors, and concluding with strategic considerations. This non-linear, section-based structure allows users to either follow a guided path or jump directly to topics of interest, enhancing usability and information retention over a linear report format. Key interactions include toggles for economic cycles, a dynamic radar chart for stock type comparison, and tabbed interfaces for sector exploration. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: Core Characteristics -> Goal: Inform/Organize -> Viz/Method: Interactive HTML/CSS cards with icons and hover effects -> Interaction: Hover to reveal details -> Justification: More engaging and scannable than a list. -> Library/Method: HTML/Tailwind/JS.
+        - Report Info: Performance across cycles -> Goal: Compare/Change -> Viz/Method: A Chart.js line chart comparing a less volatile defensive index to a more volatile market index, with a toggle to switch context between 'Recession' and 'Expansion'. -> Interaction: Button toggle updates chart context and descriptive text. -> Justification: Visually demonstrates low beta and performance differences in a dynamic, memorable way. -> Library/Method: Chart.js/JS.
+        - Report Info: Defensive vs. Cyclical vs. Growth -> Goal: Compare/Organize -> Viz/Method: A multi-axis Radar Chart from Chart.js alongside a corresponding interactive table. -> Interaction: Checkboxes to add/remove stock types from the chart for direct comparison. -> Justification: Radar charts are excellent for multi-variable comparison, providing a quick visual fingerprint for each stock type. -> Library/Method: Chart.js/JS.
+        - Report Info: Key Sectors -> Goal: Inform/Organize -> Viz/Method: A tabbed content area. -> Interaction: Click tabs for 'Consumer Staples', 'Utilities', 'Healthcare'. -> Justification: A clean, standard UI pattern for presenting categorized information without cluttering the page. -> Library/Method: HTML/Tailwind/JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f7f4; /* Warm neutral background */
+            color: #1e293b; /* Slate 800 */
+        }
+        .nav-link {
+            transition: color 0.3s, border-color 0.3s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #3b82f6; /* Blue 500 */
+            border-bottom-color: #3b82f6;
+        }
+        .card {
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 40vh;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .tab.active {
+            border-color: #3b82f6;
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <a href="#" class="text-2xl font-bold text-slate-700">🛡️ Defensive Stocks</a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#basics" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 border-b-2 border-transparent">The Basics</a>
+                        <a href="#performance" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 border-b-2 border-transparent">Performance</a>
+                        <a href="#comparison" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 border-b-2 border-transparent">Comparison</a>
+                        <a href="#sectors" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 border-b-2 border-transparent">Sectors</a>
+                        <a href="#strategy" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-slate-600 border-b-2 border-transparent">Strategy</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500">
+                        <span class="sr-only">Open main menu</span>
+                        <div class="space-y-1.5">
+                           <span class="block w-6 h-0.5 bg-slate-600"></span>
+                           <span class="block w-6 h-0.5 bg-slate-600"></span>
+                           <span class="block w-4 h-0.5 bg-slate-600"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#basics" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-slate-600">The Basics</a>
+                <a href="#performance" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-slate-600">Performance</a>
+                <a href="#comparison" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-slate-600">Comparison</a>
+                <a href="#sectors" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-slate-600">Sectors</a>
+                <a href="#strategy" class="block nav-link px-3 py-2 rounded-md text-base font-medium text-slate-600">Strategy</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-slate-800">Your Guide to Market Stability</h1>
+                <p class="mt-6 max-w-3xl mx-auto text-lg md:text-xl text-slate-600">Discover defensive stocks: the investments designed to weather economic storms. This interactive guide explains how they work, where to find them, and their strategic role in building a resilient portfolio.</p>
+                <div class="mt-8">
+                    <a href="#basics" class="inline-block bg-blue-600 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:bg-blue-700 transition-colors">Start Exploring</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 1: The Basics -->
+        <section id="basics" class="py-16 md:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-800">What is a Defensive Stock?</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-lg text-slate-600">At its core, a defensive stock belongs to a company offering goods and services that people need and buy regardless of the economy's health. Think food, electricity, and healthcare. This consistent demand provides them with a "defensive" shield against market volatility.</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Card: Inelastic Demand -->
+                    <div class="card bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-400">
+                        <h3 class="text-xl font-semibold mb-3">💡 Inelastic Demand</h3>
+                        <p class="text-slate-600">Demand for their products (like utilities or basic groceries) doesn't change much with economic shifts. People need them, period.</p>
+                    </div>
+                    <!-- Card: Stable Earnings -->
+                    <div class="card bg-white p-6 rounded-lg shadow-md border-t-4 border-green-400">
+                        <h3 class="text-xl font-semibold mb-3">💰 Stable Earnings & Cash Flow</h3>
+                        <p class="text-slate-600">Consistent demand leads to predictable revenue and strong, reliable cash flows, even during a recession.</p>
+                    </div>
+                    <!-- Card: Consistent Dividends -->
+                    <div class="card bg-white p-6 rounded-lg shadow-md border-t-4 border-purple-400">
+                        <h3 class="text-xl font-semibold mb-3">🎁 Consistent Dividends</h3>
+                        <p class="text-slate-600">Many are known for paying regular, and often growing, dividends, providing a steady income stream to investors.</p>
+                    </div>
+                    <!-- Card: Low Volatility (Beta) -->
+                    <div class="card bg-white p-6 rounded-lg shadow-md border-t-4 border-yellow-400">
+                        <h3 class="text-xl font-semibold mb-3">📉 Low Volatility (Low Beta)</h3>
+                        <p class="text-slate-600">Their stock prices tend to fluctuate less than the overall market. A beta below 1.0 signals this lower sensitivity.</p>
+                    </div>
+                    <!-- Card: Resilience -->
+                    <div class="card bg-white p-6 rounded-lg shadow-md border-t-4 border-red-400">
+                        <h3 class="text-xl font-semibold mb-3">💪 Resilience to Cycles</h3>
+                        <p class="text-slate-600">They are relatively immune to the booms and busts of the economic cycle, maintaining performance throughout.</p>
+                    </div>
+                    <!-- Card: Not "Defense" -->
+                    <div class="card bg-white p-6 rounded-lg shadow-md border-t-4 border-slate-400">
+                        <h3 class="text-xl font-semibold mb-3">✈️ Not "Defense" Stocks</h3>
+                        <p class="text-slate-600">Important distinction: "Defensive" stocks are about consumer needs, while "Defense" stocks are military contractors.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Performance -->
+        <section id="performance" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Performance Across Economic Cycles</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">Defensive stocks behave differently in booming economies versus recessions. Their low volatility is a double-edged sword. Use the toggle below to see how their performance typically compares to the broader market in different economic climates.</p>
+                </div>
+                <div class="text-center mb-8">
+                    <div class="inline-flex rounded-md shadow-sm" role="group">
+                        <button type="button" id="recession-btn" class="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-l-lg">Recession 📉</button>
+                        <button type="button" id="expansion-btn" class="px-6 py-3 text-sm font-medium text-blue-600 bg-white border-t border-b border-r border-blue-600 hover:bg-blue-50 rounded-r-lg">Expansion 📈</button>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-4 sm:p-8 rounded-lg shadow-inner">
+                    <p id="performance-text" class="text-center text-slate-700 mb-6 text-base md:text-lg transition-opacity duration-500"></p>
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 3: Comparison -->
+        <section id="comparison" class="py-16 md:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-800">The Stock Universe: A Comparison</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">To truly understand defensive stocks, it helps to compare them to their counterparts: cyclical and growth stocks. Each has a different risk profile and performs best in different conditions. Use the checkboxes to compare them on the chart.</p>
+                </div>
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div class="chart-container h-96 md:h-[500px] max-h-[60vh]">
+                        <canvas id="comparisonChart"></canvas>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-center space-x-4">
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="compare-defensive" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked> <span class="ml-2 text-slate-700">Defensive</span></label>
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="compare-cyclical" class="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500" checked> <span class="ml-2 text-slate-700">Cyclical</span></label>
+                            <label class="flex items-center cursor-pointer"><input type="checkbox" id="compare-growth" class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500" checked> <span class="ml-2 text-slate-700">Growth</span></label>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h4 class="font-semibold text-lg mb-2 text-slate-800">Key Distinctions</h4>
+                            <ul class="space-y-2 text-slate-600">
+                                <li><strong class="text-blue-600">Defensive:</strong> Stable demand. Low volatility. Consistent dividends. Outperforms in recessions.</li>
+                                <li><strong class="text-red-600">Cyclical:</strong> Demand follows the economy. High volatility. Unstable dividends. Outperforms in expansions.</li>
+                                <li><strong class="text-green-600">Growth:</strong> Focused on rapid expansion. High volatility. Rarely pays dividends, reinvesting profits instead.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Sectors -->
+        <section id="sectors" class="py-16 md:py-24 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Where to Find Defensive Stocks</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">Defensive stocks are concentrated in sectors that provide essential goods and services. Explore the three primary defensive sectors below to see prominent examples in the U.S. market.</p>
+                </div>
+
+                <div>
+                    <div class="mb-6 border-b border-gray-200">
+                        <nav class="-mb-px flex justify-center space-x-2 sm:space-x-8" aria-label="Tabs">
+                            <button class="tab active whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg" data-tab="staples">Consumer Staples</button>
+                            <button class="tab whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 rounded-t-lg" data-tab="utilities">Utilities</button>
+                            <button class="tab whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 rounded-t-lg" data-tab="healthcare">Healthcare</button>
+                        </nav>
+                    </div>
+                    <div id="tab-content" class="mt-8">
+                        <!-- Consumer Staples Content -->
+                        <div class="tab-pane active" id="staples">
+                            <div class="text-center">
+                                <h3 class="text-2xl font-semibold text-slate-700">🛒 Consumer Staples</h3>
+                                <p class="mt-2 max-w-2xl mx-auto text-slate-600">Companies providing essential products people buy out of necessity, like food, drinks, and household cleaners. Their sales are stable through all economic conditions.</p>
+                            </div>
+                            <div class="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center">
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Procter & Gamble</span> (PG)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Coca-Cola</span> (KO)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Walmart</span> (WMT)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Costco</span> (COST)</div>
+                            </div>
+                        </div>
+                        <!-- Utilities Content -->
+                        <div class="tab-pane hidden" id="utilities">
+                            <div class="text-center">
+                                <h3 class="text-2xl font-semibold text-slate-700">💡 Utilities</h3>
+                                <p class="mt-2 max-w-2xl mx-auto text-slate-600">Firms that provide electricity, natural gas, and water. Demand is constant as these are fundamental for daily life. They often operate in regulated environments, ensuring predictable revenue.</p>
+                            </div>
+                            <div class="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center">
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">NextEra Energy</span> (NEE)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Duke Energy</span> (DUK)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">AT&T</span> (T)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Verizon</span> (VZ)</div>
+                            </div>
+                        </div>
+                        <!-- Healthcare Content -->
+                        <div class="tab-pane hidden" id="healthcare">
+                            <div class="text-center">
+                                <h3 class="text-2xl font-semibold text-slate-700">⚕️ Healthcare</h3>
+                                <p class="mt-2 max-w-2xl mx-auto text-slate-600">Includes pharmaceutical companies, medical device makers, and healthcare providers. The need for medical care is non-discretionary and often increases with age, ensuring steady demand.</p>
+                            </div>
+                           <div class="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center">
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Johnson & Johnson</span> (JNJ)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Pfizer</span> (PFE)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Merck</span> (MRK)</div>
+                                <div class="p-4 bg-slate-50 rounded-lg"><span class="font-semibold">Abbott Labs</span> (ABT)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Strategy -->
+        <section id="strategy" class="py-16 md:py-24">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-800">Strategic Role in Your Portfolio</h2>
+                    <p class="mt-4 max-w-3xl mx-auto text-lg text-slate-600">Defensive stocks aren't just about playing it safe; they serve specific, strategic purposes in a well-balanced investment plan. Understanding their pros and cons is key to using them effectively.</p>
+                </div>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Pros -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold text-green-600 mb-4">Advantages 👍</h3>
+                        <ul class="space-y-3 text-slate-600 list-disc list-inside">
+                            <li><strong>Downside Protection:</strong> Acts as a buffer during market downturns, preserving capital.</li>
+                            <li><strong>Consistent Income:</strong> Reliable dividends provide a steady cash flow.</li>
+                            <li><strong>Lower Risk:</strong> Less volatility helps smooth out overall portfolio returns.</li>
+                            <li><strong>Stability:</strong> Predictable earnings offer peace of mind in turbulent times.</li>
+                        </ul>
+                    </div>
+                    <!-- Cons -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-2xl font-semibold text-red-600 mb-4">Disadvantages 👎</h3>
+                        <ul class="space-y-3 text-slate-600 list-disc list-inside">
+                            <li><strong>Limited Upside:</strong> They typically lag behind the market during strong bull runs.</li>
+                            <li><strong>Overvaluation Risk:</strong> Can become expensive when "safe" assets are in high demand.</li>
+                            <li><strong>Mistiming Risk:</strong> Frustrated investors might sell too early in a boom or buy too late in a bust.</li>
+                            <li><strong>Dividends Not Guaranteed:</strong> While reliable, they can be cut in severe financial distress.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-slate-800 text-white">
+        <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-slate-300">This interactive guide is for educational purposes only and not financial advice.</p>
+            <p class="text-sm text-slate-400 mt-2">© 2025 Defensive Stock Explorer. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mobile Menu
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+
+            // Active Nav Link Scrolling
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.nav-link');
+
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.4
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+            
+            // Performance Chart
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            const performanceText = document.getElementById('performance-text');
+            const recessionBtn = document.getElementById('recession-btn');
+            const expansionBtn = document.getElementById('expansion-btn');
+
+            const performanceData = {
+                labels: ['Q1', 'Q2', 'Q3', 'Q4', 'Q1', 'Q2', 'Q3', 'Q4'],
+                datasets: {
+                    recession: [
+                        { label: 'Broader Market (e.g., S&P 500)', data: [100, 90, 85, 80, 75, 82, 78, 70], borderColor: '#ef4444', tension: 0.1, borderWidth: 2 },
+                        { label: 'Defensive Stocks Index', data: [100, 98, 95, 93, 90, 92, 91, 88], borderColor: '#3b82f6', tension: 0.1, borderWidth: 3, borderDash: [5, 5] }
+                    ],
+                    expansion: [
+                        { label: 'Broader Market (e.g., S&P 500)', data: [100, 110, 115, 125, 130, 128, 140, 150], borderColor: '#22c55e', tension: 0.1, borderWidth: 3 },
+                        { label: 'Defensive Stocks Index', data: [100, 102, 104, 106, 109, 110, 112, 115], borderColor: '#3b82f6', tension: 0.1, borderWidth: 2, borderDash: [5, 5] }
+                    ]
+                }
+            };
+
+            const performanceChart = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: performanceData.labels,
+                    datasets: performanceData.datasets.recession
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            function setPerformanceMode(mode) {
+                if (mode === 'recession') {
+                    performanceChart.data.datasets = performanceData.datasets.recession;
+                    performanceText.textContent = "In a recession, defensive stocks tend to fall less than the broader market, acting as a 'protective shield' for a portfolio. Their stability becomes highly valuable.";
+                    recessionBtn.classList.add('bg-blue-600', 'text-white');
+                    recessionBtn.classList.remove('bg-white', 'text-blue-600');
+                    expansionBtn.classList.add('bg-white', 'text-blue-600');
+                    expansionBtn.classList.remove('bg-blue-600', 'text-white');
+                } else {
+                    performanceChart.data.datasets = performanceData.datasets.expansion;
+                    performanceText.textContent = "During an economic expansion, defensive stocks typically grow more slowly and lag behind the broader market. Their gains are more modest as investors favor higher-growth cyclical stocks.";
+                    expansionBtn.classList.add('bg-blue-600', 'text-white');
+                    expansionBtn.classList.remove('bg-white', 'text-blue-600');
+                    recessionBtn.classList.add('bg-white', 'text-blue-600');
+                    recessionBtn.classList.remove('bg-blue-600', 'text-white');
+                }
+                performanceChart.update();
+            }
+
+            recessionBtn.addEventListener('click', () => setPerformanceMode('recession'));
+            expansionBtn.addEventListener('click', () => setPerformanceMode('expansion'));
+            setPerformanceMode('recession');
+
+            // Comparison Chart (Radar)
+            const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+            const comparisonData = {
+                labels: ['Stability', 'Growth Potential', 'Dividend Yield', 'Recession Resilience', 'Volatility'],
+                datasets: [
+                    {
+                        label: 'Defensive',
+                        data: [9, 3, 8, 9, 2],
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        hidden: false
+                    },
+                    {
+                        label: 'Cyclical',
+                        data: [3, 8, 4, 2, 9],
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        pointBackgroundColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                        hidden: false
+                    },
+                    {
+                        label: 'Growth',
+                        data: [4, 10, 1, 3, 8],
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 2,
+                        hidden: false
+                    }
+                ]
+            };
+            const comparisonChart = new Chart(comparisonCtx, {
+                type: 'radar',
+                data: comparisonData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            pointLabels: { font: { size: 12 } },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    }
+                }
+            });
+
+            const checkboxes = {
+                defensive: document.getElementById('compare-defensive'),
+                cyclical: document.getElementById('compare-cyclical'),
+                growth: document.getElementById('compare-growth')
+            };
+
+            function updateComparisonChart() {
+                comparisonChart.data.datasets[0].hidden = !checkboxes.defensive.checked;
+                comparisonChart.data.datasets[1].hidden = !checkboxes.cyclical.checked;
+                comparisonChart.data.datasets[2].hidden = !checkboxes.growth.checked;
+                comparisonChart.update();
+            }
+
+            Object.values(checkboxes).forEach(box => box.addEventListener('change', updateComparisonChart));
+            updateComparisonChart();
+
+            // Sector Tabs
+            const tabs = document.querySelectorAll('.tab');
+            const tabPanes = document.querySelectorAll('.tab-pane');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active', 'border-blue-600', 'bg-blue-600', 'text-white'));
+                    tab.classList.add('active', 'border-blue-600', 'bg-blue-600', 'text-white');
+                    
+                    const targetPane = document.getElementById(tab.dataset.tab);
+                    tabPanes.forEach(pane => pane.classList.add('hidden'));
+                    targetPane.classList.remove('hidden');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
